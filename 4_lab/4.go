@@ -54,6 +54,17 @@ func conditionalEntropy(matrix [][]float64, marginalB []float64) float64 {
 	return condEnt
 }
 
+// Функция для вывода матрицы
+func printMatrix(matrix [][]float64) {
+	fmt.Println("Матрица совместных вероятностей p(A, B):")
+	for _, row := range matrix {
+		for _, val := range row {
+			fmt.Printf("%.4f\t", val)
+		}
+		fmt.Println()
+	}
+}
+
 func main() {
 	// Пример матрицы совместных вероятностей p(A, B)
 	matrix := [][]float64{
@@ -66,6 +77,9 @@ func main() {
 	// Количество состояний A и B
 	stateCount := 4
 
+	// Вывод матрицы вероятностей
+	printMatrix(matrix)
+
 	// Вычисляем маргинальные вероятности для B (путем суммирования по строкам)
 	marginalB := make([]float64, stateCount)
 	for j := 0; j < stateCount; j++ {
@@ -77,6 +91,7 @@ func main() {
 	// 1. Вычисление энтропии источника H(A)
 	marginalA := marginalProbabilities(matrix, stateCount)
 	H_A := entropy(marginalA)
+	fmt.Println("")
 	fmt.Printf("Энтропия источника H(A): %.4f\n", H_A)
 
 	// 2. Вычисление совместной энтропии H(A, B)
