@@ -28,7 +28,7 @@ print(" ")
 parity_matrix_full = np.hstack((info_matrix, check_matrix))
 
 # Информационная часть кода
-info_part = np.array([1, 0, 1, 0, 1]) #1 0 1 0 1
+info_part = np.array([1, 0, 0, 0, 1]) #1 0 1 0 1
 
 # Формирование избыточного кода (вычисляем контрольные разряды) умножение векторов и взятие остатка по mod 2
 redundant_code = np.mod(info_part @ check_matrix, 2)

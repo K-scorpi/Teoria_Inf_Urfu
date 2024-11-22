@@ -14,9 +14,6 @@ func main() {
 		{1, 0, 0, 0, 0},
 	}
 
-	fmt.Println("Матрица кода:")
-	printMatrix(infoMatrix)
-
 	// Проверочная матрица
 	checkMatrix := [][]int{
 		{1, 0, 1, 0},
@@ -26,46 +23,28 @@ func main() {
 		{0, 1, 1, 1},
 	}
 
-	fmt.Println("\nПроверочная матрица:")
-	printMatrix(checkMatrix)
-
 	// Полная образующая матрица
 	parityMatrixFull := hstack(infoMatrix, checkMatrix)
 
-	// Информационная часть кода
-	infoPart := []int{1, 0, 1, 0, 1}
+	// Пример правильного кодового слова
+	codeword := []int{1, 0, 1, 0, 1, 1, 1, 0, 0} // Правильное кодовое слово
 
-	// Формирование избыточного кода
-	redundantCode := modVec(matVecMul(checkMatrix, infoPart), 2)
+	// Вносим ошибку в один из разрядов
+	codewordWithError := make([]int, len(codeword))
+	copy(codewordWithError, codeword)
+	codewordWithError[3] ^= 1 // Инверсия бита в разряде 3 (внесли ошибку)
 
-	// Полный кодовый вектор
-	codeWord := append(infoPart, redundantCode...)
-	fmt.Println("\nСформированный кодовый вектор:", codeWord)
+	fmt.Println("Исходное кодовое слово:", codeword)
+	fmt.Println("Кодовое слово с ошибкой:", codewordWithError)
 
-	// Проверка кодовой комбинации
-
-	/*
-		Синдром ошибки вычисляется как произведение кодового слова
-		на транспонированную проверочную матрицу с последующим взятием
-		остатка по модулю 2:
-	*/
-	codeword1 := []int{0, 1, 0, 1, 0, 1, 1, 0, 0}
-	codeword2 := []int{1, 0, 0, 1, 0, 1, 1, 1, 0}
-
-	fmt.Println("\nПроверка Комбинации 1:")
-	syndrome1 := checkCodeword(codeword1, transpose(parityMatrixFull))
-	fmt.Println("Синдром:", syndrome1)
-
-	fmt.Println("\nПроверка Комбинации 2:")
-	syndrome2 := checkCodeword(codeword2, transpose(parityMatrixFull))
-	fmt.Println("Синдром:", syndrome2)
+	// Вычисление синдрома для кодового слова с ошибкой
+	fmt.Println("\nПроверка кодового слова с ошибкой:")
+	syndrome := checkCodeword(codewordWithError, transpose(parityMatrixFull))
+	fmt.Println("Синдром:", syndrome)
 
 	// Поиск ошибки
-	fmt.Println("\nПоиск ошибки для Комбинации 1:")
-	findError(syndrome1, parityMatrixFull)
-
-	fmt.Println("\nПоиск ошибки для Комбинации 2:")
-	findError(syndrome2, parityMatrixFull)
+	fmt.Println("\nПоиск ошибки в кодовом слове:")
+	findError(syndrome, parityMatrixFull)
 }
 
 // Функция для вывода матрицы
@@ -86,9 +65,9 @@ func hstack(a, b [][]int) [][]int {
 
 // Умножение матрицы на вектор
 func matVecMul(matrix [][]int, vector []int) []int {
-	result := make([]int, len(matrix[0]))
-	for i := range vector {
-		for j := range result {
+	result := make([]int, len(matrix[0])) // Длина результата равна числу столбцов
+	for j := range result {               // Проходим по столбцам результата
+		for i := range matrix { // Проходим по строкам матрицы
 			result[j] += matrix[i][j] * vector[i]
 		}
 	}
@@ -116,14 +95,31 @@ func transpose(matrix [][]int) [][]int {
 	return result
 }
 
-// Проверка кодового слова
+// Проверка кодового слова с отладочными сообщениями
 func checkCodeword(codeword []int, checkMatrix [][]int) []int {
-	return modVec(matVecMul(checkMatrix, codeword), 2)
+	fmt.Println("\nПроверяем кодовое слово:", codeword)
+
+	// Транспонированная проверочная матрица
+	transposedMatrix := transpose(checkMatrix)
+	fmt.Println("\nТранспонированная проверочная матрица:")
+	printMatrix(transposedMatrix)
+
+	// Результат умножения перед модулем
+	result := matVecMul(transposedMatrix, codeword)
+	fmt.Println("\nРезультат умножения перед модулем:", result)
+
+	// Результат умножения после модуля
+	modResult := modVec(result, 2)
+	fmt.Println("Результат умножения после модуля:", modResult)
+
+	return modResult
 }
 
 // Поиск ошибки
 func findError(syndrome []int, parityMatrix [][]int) {
+	fmt.Println("\nИщем столбец в транспонированной проверочной матрице, совпадающий с синдромом:")
 	for i, col := range transpose(parityMatrix) {
+		fmt.Printf("Проверяем столбец %d: %v\n", i, col)
 		if equalVectors(syndrome, col) {
 			fmt.Printf("Ошибка в разряде %d\n", i)
 			return
@@ -132,11 +128,6 @@ func findError(syndrome []int, parityMatrix [][]int) {
 	fmt.Println("Ошибка не обнаружена или она двукратная.")
 }
 
-/*
-Если синдром ошибки не равен нулю, то
-он указывает на столбец проверочной матрицы HTHT,
-соответствующий ошибочному разряду
-*/
 // Проверка на равенство двух векторов
 func equalVectors(a, b []int) bool {
 	if len(a) != len(b) {
