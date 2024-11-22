@@ -4,115 +4,148 @@ import (
 	"fmt"
 )
 
-// Матрица образующей
-var G = [][]int{
-	{1, 0, 1, 0},
-	{0, 0, 1, 1},
-	{1, 1, 1, 0},
-	{1, 1, 0, 1},
-	{0, 1, 1, 1},
-}
-
-// Функция для вычисления синдрома
-func syndrome(codeWord []int) []int {
-	var synd []int
-	for i := 0; i < len(G); i++ {
-		sum := 0
-		// Используем все 9 бит codeWord, но ограничены размером строки G[i]
-		for j := 0; j < len(G[i]); j++ {
-			sum ^= codeWord[j] * G[i][j]
-		}
-		synd = append(synd, sum)
-	}
-	return synd
-}
-
-// Функция для формирования избыточного кода
-func encode(informationWord []int) []int {
-	var codeWord []int
-	// Сначала добавляем информационную часть
-	for i := 0; i < len(informationWord); i++ {
-		codeWord = append(codeWord, informationWord[i])
-	}
-	//  Добавляем избыточные биты, вычисленные с помощью матрицы G
-	for i := 0; i < len(G); i++ {
-		sum := 0
-		for j := 0; j < len(informationWord); j++ {
-			sum ^= informationWord[j] * G[i][j]
-		}
-		codeWord = append(codeWord, sum)
-	}
-	return codeWord
-}
-
-// Функция для проверки кодовой комбинации
-func check(codeWord []int) (bool, int) {
-	synd := syndrome(codeWord)
-
-	// Проверка, является ли синдром нулевым (все элементы равны нулю)
-	isValid := true
-	for _, v := range synd {
-		if v != 0 {
-			isValid = false
-			break
-		}
-	}
-
-	// Если кодовая комбинация верна, возвращаем true
-	if isValid {
-		return true, -1
-	}
-
-	// Поиск позиции первой ошибки (если есть)
-	errorPosition := -1
-	for i := 0; i < len(synd); i++ {
-		if synd[i] == 1 {
-			errorPosition = i
-			break
-		}
-	}
-	return false, errorPosition
-}
-
 func main() {
-	// Контрольные соотношения
-	//fmt.Println("Контрольные соотношения:")
-	/*for i := 0; i < len(G); i++ {
-	  //fmt.Print("C" + strconv.Itoa(i+1) + " = ")
-	  for j := 0; j < len(G[i]); j++ {
-	   if G[i][j] == 1 {
-	    //fmt.Print("x" + strconv.Itoa(j+1))
-	    if j < len(G[i])-1 {
-	     //fmt.Print(" ^ ")
-	    }
-	   }
-	  }
-	  //fmt.Println(" = 0")
-	 }*/
+	// Информационная часть образующей матрицы кода
+	infoMatrix := [][]int{
+		{0, 0, 0, 0, 1},
+		{0, 0, 0, 1, 0},
+		{0, 0, 1, 0, 0},
+		{0, 1, 0, 0, 0},
+		{1, 0, 0, 0, 0},
+	}
+
+	fmt.Println("Матрица кода:")
+	printMatrix(infoMatrix)
+
+	// Проверочная матрица
+	checkMatrix := [][]int{
+		{1, 0, 1, 0},
+		{0, 0, 1, 1},
+		{1, 1, 1, 0},
+		{1, 1, 0, 1},
+		{0, 1, 1, 1},
+	}
+
+	fmt.Println("\nПроверочная матрица:")
+	printMatrix(checkMatrix)
+
+	// Полная образующая матрица
+	parityMatrixFull := hstack(infoMatrix, checkMatrix)
+
+	// Информационная часть кода
+	infoPart := []int{1, 0, 1, 0, 1}
+
 	// Формирование избыточного кода
-	informationWord1 := []int{1, 0, 1, 1}
-	codeWord1 := encode(informationWord1)
-	fmt.Println("\nИзбыточный код 1:", codeWord1)
+	redundantCode := modVec(matVecMul(checkMatrix, infoPart), 2)
 
-	informationWord2 := []int{0, 1, 1, 0}
-	codeWord2 := encode(informationWord2)
-	fmt.Println("Избыточный код 2:", codeWord2)
+	// Полный кодовый вектор
+	codeWord := append(infoPart, redundantCode...)
+	fmt.Println("\nСформированный кодовый вектор:", codeWord)
 
-	// Проверка кодовых комбинаций
-	fmt.Println("\nПроверка кодовых комбинаций:")
-	valid, errorPos := check(codeWord1)
-	if valid {
-		fmt.Println("Кодовая комбинация 1 верна.")
-	} else {
-		fmt.Println("Кодовая комбинация 1 неверна.")
-		fmt.Println("Ошибочный разряд:", errorPos)
+	// Проверка кодовой комбинации
+
+	/*
+		Синдром ошибки вычисляется как произведение кодового слова
+		на транспонированную проверочную матрицу с последующим взятием
+		остатка по модулю 2:
+	*/
+	codeword1 := []int{0, 1, 0, 1, 0, 1, 1, 0, 0}
+	codeword2 := []int{1, 0, 0, 1, 0, 1, 1, 1, 0}
+
+	fmt.Println("\nПроверка Комбинации 1:")
+	syndrome1 := checkCodeword(codeword1, transpose(parityMatrixFull))
+	fmt.Println("Синдром:", syndrome1)
+
+	fmt.Println("\nПроверка Комбинации 2:")
+	syndrome2 := checkCodeword(codeword2, transpose(parityMatrixFull))
+	fmt.Println("Синдром:", syndrome2)
+
+	// Поиск ошибки
+	fmt.Println("\nПоиск ошибки для Комбинации 1:")
+	findError(syndrome1, parityMatrixFull)
+
+	fmt.Println("\nПоиск ошибки для Комбинации 2:")
+	findError(syndrome2, parityMatrixFull)
+}
+
+// Функция для вывода матрицы
+func printMatrix(matrix [][]int) {
+	for _, row := range matrix {
+		fmt.Println(row)
 	}
+}
 
-	valid, errorPos = check(codeWord2)
-	if valid {
-		fmt.Println("Кодовая комбинация 2 верна.")
-	} else {
-		fmt.Println("Кодовая комбинация 2 неверна.")
-		fmt.Println("Ошибочный разряд:", errorPos)
+// Функция горизонтальной конкатенации матриц
+func hstack(a, b [][]int) [][]int {
+	result := make([][]int, len(a))
+	for i := range a {
+		result[i] = append(a[i], b[i]...)
 	}
+	return result
+}
+
+// Умножение матрицы на вектор
+func matVecMul(matrix [][]int, vector []int) []int {
+	result := make([]int, len(matrix[0]))
+	for i := range vector {
+		for j := range result {
+			result[j] += matrix[i][j] * vector[i]
+		}
+	}
+	return result
+}
+
+// Взятие остатка по модулю для вектора
+func modVec(vector []int, mod int) []int {
+	for i := range vector {
+		vector[i] %= mod
+	}
+	return vector
+}
+
+// Транспонирование матрицы
+func transpose(matrix [][]int) [][]int {
+	rows, cols := len(matrix), len(matrix[0])
+	result := make([][]int, cols)
+	for i := range result {
+		result[i] = make([]int, rows)
+		for j := range matrix {
+			result[i][j] = matrix[j][i]
+		}
+	}
+	return result
+}
+
+// Проверка кодового слова
+func checkCodeword(codeword []int, checkMatrix [][]int) []int {
+	return modVec(matVecMul(checkMatrix, codeword), 2)
+}
+
+// Поиск ошибки
+func findError(syndrome []int, parityMatrix [][]int) {
+	for i, col := range transpose(parityMatrix) {
+		if equalVectors(syndrome, col) {
+			fmt.Printf("Ошибка в разряде %d\n", i)
+			return
+		}
+	}
+	fmt.Println("Ошибка не обнаружена или она двукратная.")
+}
+
+/*
+Если синдром ошибки не равен нулю, то
+он указывает на столбец проверочной матрицы HTHT,
+соответствующий ошибочному разряду
+*/
+// Проверка на равенство двух векторов
+func equalVectors(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
