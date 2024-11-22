@@ -2,12 +2,12 @@ import numpy as np
 from itertools import combinations
 
 # Новый образующий многочлен (матрица)
-generator_polynomial = np.array([1, 0, 1, 0, 0, 1])  # (1 + x^3+ x^5)
+generator_polynomial = np.array([1, 0, 0, 1, 1, 1])  # (1 + x^3+ x^5) 1 0 0 1 1 1
 n = 14  # Общая длина кодовой комбинации (избыточный код)
 k = 9  # Длина информационной части
 
 # Информационная часть кода
-information_bits = np.array([0, 1, 1, 0, 0, 0, 1, 1, 1])
+information_bits = np.array([1, 0, 0, 1, 1, 1, 0, 1, 0]) #1 0 0 1 1 1 0 1 0
 
 # Функция для умножения многочленов по модулю 2
 def poly_mult(p1, p2):
